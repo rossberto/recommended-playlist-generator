@@ -87,4 +87,4 @@ def recomendByProfile():
     similitud = getSimilitudDataFrame(df, user_profile)
     recomended_ids = getRecommendations(similitud)
 
-    return str(recomended_ids)
+    return flask.jsonify(ids=list(recomended_ids))
