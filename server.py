@@ -1,14 +1,9 @@
 from flask import Flask, request
 import flask
-from dotenv import load_dotenv
-load_dotenv()
-import os
-import sys
 import spotipy
 import spotipy.util as util
 from spotipy.oauth2 import SpotifyClientCredentials
 import pandas as pd
-import matplotlib.pyplot as plt
 from scipy.spatial.distance import pdist, squareform
 
 app = Flask(__name__)
@@ -70,7 +65,6 @@ def getRecommendations(similitud):
 
 @app.route('/profile')
 def recommendByProfile():
-
     auth()
 
     top_artists = sp.current_user_top_artists(time_range='long_term', limit=50)
@@ -86,8 +80,33 @@ def recommendByProfile():
 
     return flask.jsonify(ids=list(recomended_ids))
 
+def getMoodProfile(track_ids):
+    features = sp.audio_features(track_ids)
+    ftrs = pd.DataFrame(features)
+    return ftrs.describe().loc['mean']
+
+def getRelatedMoodArtistsUris(ids):
+    results = sp.tracks(ids)
+    return [track['artists'][0]['uri'] for track in results['tracks']]
+
 @app.route('/mood')
 def recommendByMood():
+    auth()
+
     id1 = request.args.get('id1')
-    print(id1)
-    return id1
+    id2 = request.args.get('id2')
+    id3 = request.args.get('id3')
+    id4 = request.args.get('id4')
+    id5 = request.args.get('id5')
+    ids = [id1, id2, id3, id4, id5]
+
+    mood_profile = getMoodProfile(ids)
+    related_artists_uris = getRelatedMoodArtistsUris(ids)
+    related_tracks = getRelatedTracks(related_artists_uris)
+    related_tracks_ids = getRelatedTracksIds(related_tracks)
+    df = getRelatedFeaturesDataFrame(related_tracks_ids)
+    similitud = getSimilitudDataFrame(df, mood_profile)
+    recomended_ids = getRecommendations(similitud)
+
+
+    return flask.jsonify(ids=list(recomended_ids))
