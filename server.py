@@ -1,4 +1,4 @@
-from flask import Flask
+from flask import Flask, request
 import flask
 from dotenv import load_dotenv
 load_dotenv()
@@ -13,17 +13,11 @@ from scipy.spatial.distance import pdist, squareform
 
 app = Flask(__name__)
 
-scope = 'user-top-read'
-
-if len(sys.argv) > 1:
-    username = sys.argv[1]
-else:
-    print("Usage: %s username" % (sys.argv[0],))
-    sys.exit()
-
-token = 'BQATA6h4cRu5HRnhAf374lKuLD9ZYO5QBrsfTO4taXwu6ahkYJhernfwGs7SrWQf34ibJKUN2x8YI29V2C_y6qmL0D7jzXxyWE1S0u-qDhIOeQl-GRsK700690ZzZB0WTjYtLE0X06_7H4iyR6ZTvGxb8d97hoYR'
-# util.prompt_for_user_token(username, scope)
-sp = spotipy.Spotify(auth=token)
+def auth():
+    token = request.args.get('token')
+    #scope = 'user-top-read'
+    global sp
+    sp = spotipy.Spotify(auth=token)
 
 def getUserProfile(top_tracks):
     track_ids = [top_tracks['items'][i]['id'] for i in range(len(top_tracks['items']))]
@@ -75,7 +69,10 @@ def getRecommendations(similitud):
     return similitud.User.sort_values(ascending=False)[1:51].index
 
 @app.route('/profile')
-def recomendByProfile():
+def recommendByProfile():
+
+    auth()
+
     top_artists = sp.current_user_top_artists(time_range='long_term', limit=50)
     top_tracks = sp.current_user_top_tracks(time_range='long_term', limit=50)
 
@@ -88,3 +85,9 @@ def recomendByProfile():
     recomended_ids = getRecommendations(similitud)
 
     return flask.jsonify(ids=list(recomended_ids))
+
+@app.route('/mood')
+def recommendByMood():
+    id1 = request.args.get('id1')
+    print(id1)
+    return id1
